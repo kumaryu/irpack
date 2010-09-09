@@ -1,0 +1,26 @@
+#!/usr/bin/env ir
+
+require 'irpack'
+require 'optparse'
+
+packdir     = nil
+output_file = nil
+target      = :exe
+opt = OptionParser.new
+opt.on('-d SOURCEDIR',  'Specify pack directory. [base of ENTRYFILE]') {|v| packdir = v }
+opt.on('-o OUTPUTFILE', 'Specify output file name.') {|v| output_file = v }
+opt.on('-w',            'Generate window app.') { target = :winexe }
+opt.on('-W',            'Generate console app.[default]') { target = :exe }
+opt.banner = "Usage: #{$0} [options] ENTRYFILE"
+opt.parse!(ARGV)
+
+if ARGV.size<1 then
+  $stderr.puts opt.help
+  exit 1
+end
+
+entry_file  = ARGV[0]
+packdir     ||= File.dirname(entry_file)
+output_file ||= File.join(File.dirname(entry_file), File.basename(entry_file, '.*')+'.exe')
+IRPack.pack_dir(packdir, entry_file, output_file, :target => target)
+
