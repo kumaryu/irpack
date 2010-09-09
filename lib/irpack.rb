@@ -373,11 +373,12 @@ module IRPack
 
     RelType = 'http://schemas.openxmlformats.org/package/2006/relationships/meta data/core-properties'
     module_function
-    def pack(files, package_file)
+    def pack(files, package_file, compress=false)
+      compress_option = compress ? CompressionOption.normal : CompressionOption.not_compressed
       package = Package.open(package_file, System::IO::FileMode.create)
       files.each do |src, dest|
         uri = PackUriHelper.create_part_uri(Uri.new(dest, UriKind.relative))
-        part = package.create_part(uri, 'text/plain', CompressionOption.normal)
+        part = package.create_part(uri, 'application/octet-stream', compress_option)
         stream = part.get_stream
         File.open(src, 'rb') do |f|
           data = f.read
@@ -426,6 +427,8 @@ module IRPack
     module_name = path_to_module_name(output_file)
     resources   = options[:resources] || []
     target      = options[:target] || :exe
+    stdlib      = options.include?(:stdlib)   ? options[:stdlib]   : true
+    compress    = options.include?(:compress) ? options[:compress] : false
     pack_files  = files.dup
 
     Dir.mktmpdir(File.basename($0,'.*')) do |tmp_path|
@@ -433,11 +436,13 @@ module IRPack
       entry_dll = File.join(tmp_path, module_name+'.EntryPoint.dll')
       CSCompiler.compile(:dll, entry_src, preload_assemblies, [], entry_dll)
       pack_files[entry_dll] = File.basename(entry_dll)
-      preload_assemblies.each do |asm|
-        pack_files[asm] = File.basename(asm)
+      if stdlib then
+        preload_assemblies.each do |asm|
+          pack_files[asm] = File.basename(asm)
+        end
       end
       package_file = File.join(tmp_path, basename+'.pkg')
-      Packager.pack(pack_files, package_file)
+      Packager.pack(pack_files, package_file, compress)
 
       target_src = bootloader_source(
         module_name,
