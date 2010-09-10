@@ -11,6 +11,7 @@ spec = Gem::Specification.new do |s|
   s.name = 'irpack'
   s.author = 'kumaryu'
   s.email = 'kumaryu@kumayu.net'
+  s.homepage = 'http://github.com/kumaryu/irpack'
   s.version = PKG_VERSION
   s.requirements << 'none'
   s.description = <<EOF
