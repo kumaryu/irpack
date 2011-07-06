@@ -21,30 +21,30 @@ freely, subject to the following restrictions:
     distribution.
 =end
 
-require 'test/unit'
-require 'irpack/packager'
 require 'WindowsBase'
-require 'utils'
 
-class TC_Packager < Test::Unit::TestCase
-  include Utils
+module IRPack
+  module Packager
+    include System
+    include System::IO::Packaging
 
-  SrcFiles = {
-    File.join(File.dirname(__FILE__), 'test_packager.rb') => 'foo.rb',
-    File.join(File.dirname(__FILE__), 'test_cscompiler.rb') => 'bar.rb',
-  }
-
-  def test_pack
-    package_file = tempfilename
-    IRPack::Packager.pack(SrcFiles, package_file)
-    package = System::IO::Packaging::Package.open(package_file, System::IO::FileMode.open)
-    SrcFiles.each do |src, dest|
-      uri = System::Uri.new(File.join('/', dest), System::UriKind.relative)
-      assert(package.part_exists(uri))
-      stream = package.get_part(uri).get_stream
-      bytes = System::Array[System::Byte].new(stream.length)
-      stream.read(bytes, 0, stream.length)
-      assert_equal(File.open(src, 'rb'){|f|f.read}, bytes.to_a.pack('C*'))
+    RelType = 'http://schemas.openxmlformats.org/package/2006/relationships/meta data/core-properties'
+    module_function
+    def pack(files, package_file, compress=false)
+      compress_option = compress ? CompressionOption.normal : CompressionOption.not_compressed
+      package = Package.open(package_file, System::IO::FileMode.create)
+      files.each do |src, dest|
+        uri = PackUriHelper.create_part_uri(Uri.new(dest, UriKind.relative))
+        part = package.create_part(uri, 'application/octet-stream', compress_option)
+        stream = part.get_stream
+        File.open(src, 'rb') do |f|
+          data = f.read
+          stream.write(data, 0, data.size)
+        end
+        stream.close
+        package.create_relationship(uri, TargetMode.internal, RelType)
+      end
+      package.close
     end
   end
 end

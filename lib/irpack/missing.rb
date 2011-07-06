@@ -21,30 +21,24 @@ freely, subject to the following restrictions:
     distribution.
 =end
 
-require 'test/unit'
-require 'irpack/packager'
-require 'WindowsBase'
-require 'utils'
+require 'fileutils'
+require 'tmpdir'
 
-class TC_Packager < Test::Unit::TestCase
-  include Utils
-
-  SrcFiles = {
-    File.join(File.dirname(__FILE__), 'test_packager.rb') => 'foo.rb',
-    File.join(File.dirname(__FILE__), 'test_cscompiler.rb') => 'bar.rb',
-  }
-
-  def test_pack
-    package_file = tempfilename
-    IRPack::Packager.pack(SrcFiles, package_file)
-    package = System::IO::Packaging::Package.open(package_file, System::IO::FileMode.open)
-    SrcFiles.each do |src, dest|
-      uri = System::Uri.new(File.join('/', dest), System::UriKind.relative)
-      assert(package.part_exists(uri))
-      stream = package.get_part(uri).get_stream
-      bytes = System::Array[System::Byte].new(stream.length)
-      stream.read(bytes, 0, stream.length)
-      assert_equal(File.open(src, 'rb'){|f|f.read}, bytes.to_a.pack('C*'))
+if not Dir.respond_to?(:mktmpdir) or
+   not File::Stat.instance_methods.include?(:world_writable) then
+  def Dir.mktmpdir(prefix='d', tmpdir=Dir.tmpdir, &block)
+    n = 0
+    begin
+      path = File.join(tmpdir, "#{prefix}-#{Time.now.to_i}-#{$$}-#{rand(0x100000000).to_s(36)}-#{n}")
+      Dir.mkdir(path, 0700)
+    rescue Errno::EEXIST
+      n += 1
+      retry
+    end
+    begin
+      block.call(path)
+    ensure
+      FileUtils.remove_entry(path)
     end
   end
 end

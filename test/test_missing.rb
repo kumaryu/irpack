@@ -22,29 +22,15 @@ freely, subject to the following restrictions:
 =end
 
 require 'test/unit'
-require 'irpack/packager'
-require 'WindowsBase'
-require 'utils'
+require 'irpack/missing'
+require 'tmpdir'
 
-class TC_Packager < Test::Unit::TestCase
-  include Utils
-
-  SrcFiles = {
-    File.join(File.dirname(__FILE__), 'test_packager.rb') => 'foo.rb',
-    File.join(File.dirname(__FILE__), 'test_cscompiler.rb') => 'bar.rb',
-  }
-
-  def test_pack
-    package_file = tempfilename
-    IRPack::Packager.pack(SrcFiles, package_file)
-    package = System::IO::Packaging::Package.open(package_file, System::IO::FileMode.open)
-    SrcFiles.each do |src, dest|
-      uri = System::Uri.new(File.join('/', dest), System::UriKind.relative)
-      assert(package.part_exists(uri))
-      stream = package.get_part(uri).get_stream
-      bytes = System::Array[System::Byte].new(stream.length)
-      stream.read(bytes, 0, stream.length)
-      assert_equal(File.open(src, 'rb'){|f|f.read}, bytes.to_a.pack('C*'))
+class TC_Missing < Test::Unit::TestCase
+  def test_mktmpdir
+    assert_nothing_raised do
+      Dir.mktmpdir('prefix') do |path|
+        assert_match(/prefix/, path)
+      end
     end
   end
 end

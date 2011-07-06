@@ -22,29 +22,33 @@ freely, subject to the following restrictions:
 =end
 
 require 'test/unit'
-require 'irpack/packager'
-require 'WindowsBase'
+require 'irpack/entrypoint'
 require 'utils'
 
-class TC_Packager < Test::Unit::TestCase
+class TC_IRPack_EntryPoint < Test::Unit::TestCase
   include Utils
 
-  SrcFiles = {
-    File.join(File.dirname(__FILE__), 'test_packager.rb') => 'foo.rb',
-    File.join(File.dirname(__FILE__), 'test_cscompiler.rb') => 'bar.rb',
-  }
+  def test_compile
+    file = Tempfile.open(File.basename(__FILE__))
+    file.close
+    output_file = file.path
+    module_name = 'TestModule'
+    entry_file = 'foo.rb'
+    references = ironruby_assemblies
 
-  def test_pack
-    package_file = tempfilename
-    IRPack::Packager.pack(SrcFiles, package_file)
-    package = System::IO::Packaging::Package.open(package_file, System::IO::FileMode.open)
-    SrcFiles.each do |src, dest|
-      uri = System::Uri.new(File.join('/', dest), System::UriKind.relative)
-      assert(package.part_exists(uri))
-      stream = package.get_part(uri).get_stream
-      bytes = System::Array[System::Byte].new(stream.length)
-      stream.read(bytes, 0, stream.length)
-      assert_equal(File.open(src, 'rb'){|f|f.read}, bytes.to_a.pack('C*'))
+    assert_equal(output_file, IRPack::EntryPoint.compile(output_file, module_name, entry_file, references))
+    assert(File.exist?(output_file))
+    asm = nil
+    assert_nothing_raised do
+      asm = System::Reflection::Assembly.load_from(output_file)
+    end
+    entrypoint = asm.get_type("#{module_name}.EntryPoint")
+    assert_not_nil(entrypoint)
+    main = entrypoint.get_method('Main')
+    assert_not_nil(main)
+    create_package('foo.rb' => 'exit ARGV.size') do |package|
+      res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(['hoge', 'fuga', 'piyo'])]))
+      assert_equal(3, res)
     end
   end
 end
