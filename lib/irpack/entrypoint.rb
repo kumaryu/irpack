@@ -100,7 +100,7 @@ module IRPack
                 return Assembly.Load(raw);
               }
               else {
-                throw e;
+                throw;
               }
             }
           }
@@ -172,19 +172,28 @@ module IRPack
 
         public static int Main(Package package, string[] args)
         {
+          var entry_path = Path.GetDirectoryName(Path.GetFullPath(Assembly.GetEntryAssembly().Location));
+          var entry_file = Path.Combine(entry_path, "<%= entry_file %>");
           var runtime_setup = new ScriptRuntimeSetup();
           runtime_setup.LanguageSetups.Add(IronRuby.Ruby.CreateRubySetup());
-          runtime_setup.Options["MainFile"]  = "<%= entry_file %>";
+          runtime_setup.Options["MainFile"]  = entry_file;
           runtime_setup.Options["Arguments"] = args;
           runtime_setup.HostType = typeof(IRHost);
           runtime_setup.HostArguments = new object[] { package };
           var engine = IronRuby.Ruby.GetEngine(IronRuby.Ruby.CreateRuntime(runtime_setup));
           try {
-            engine.ExecuteFile("<%= entry_file %>");
+            engine.ExecuteFile(entry_file);
             return 0;
           }
           catch (IronRuby.Builtins.SystemExit e) {
             return e.Status;
+          }
+          catch (Exception e) {
+            var thread_abort = e as System.Threading.ThreadAbortException;
+            if (thread_abort==null || !(thread_abort.ExceptionState is KeyboardInterruptException)) {
+              Console.Error.WriteLine(engine.GetService<ExceptionOperations>().FormatException(e));
+            }
+            return -1;
           }
         }
       }
