@@ -1,7 +1,7 @@
 #!/usr/bin/env ir
 
 =begin
-Copyright (c) 2010 Ryuichi Sakamoto.
+Copyright (c) 2010-2011 Ryuichi Sakamoto.
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -24,33 +24,7 @@ freely, subject to the following restrictions:
 =end
 
 require 'irpack'
-require 'optparse'
 
-packdir     = nil
-output_file = nil
-target      = :exe
-compress    = false
-stdlib      = true
-opt = OptionParser.new
-opt.on('-d SOURCEDIR',  'Specify pack directory. [base of ENTRYFILE]') {|v| packdir = v }
-opt.on('-o OUTPUTFILE', 'Specify output file name.') {|v| output_file = v }
-opt.on('-w',            'Generate window app.') { target = :winexe }
-opt.on('-W',            'Generate console app.[default]') { target = :exe }
-opt.on('--compress',    'Compress package.') { compress = true }
-opt.on('--no-stdlib',   'Do not include IronRuby assemblies.') {|v| stdlib = v }
-opt.banner = "Usage: #{$0} [options] ENTRYFILE"
-opt.parse!(ARGV)
-
-if ARGV.size<1 then
-  $stderr.puts opt.help
-  exit 1
-end
-
-entry_file  = ARGV[0]
-packdir     ||= File.dirname(entry_file)
-output_file ||= File.join(File.dirname(entry_file), File.basename(entry_file, '.*')+'.exe')
-IRPack.pack_dir(packdir, entry_file, output_file,
-                :target => target,
-                :compress => compress,
-                :stdlib => stdlib)
+args = IRPack::Application::Arguments.parse!(ARGV)
+exit(IRPack::Application.run(args))
 

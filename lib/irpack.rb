@@ -37,11 +37,12 @@ module IRPack
     IronRuby.Libraries
     IronRuby.Libraries.Yaml
   ]
+
   module_function
   def path_to_module_name(filename)
     name = File.basename(filename, '.*')
     name.gsub!(/[^A-Za-z0-9_]/, '_')
-    /^[A-Za-z]/=~name ? name : ('M'+name)
+    (/^[A-Za-z]/=~name ? name : ('M'+name)).upcase
   end
 
   def ironruby_assemblies
@@ -83,8 +84,9 @@ module IRPack
       package_file = File.join(tmp_path, basename+'.pkg')
       Packager.pack(pack_files, package_file, compress)
 
-      BootLoader.compile(target, output_file, references, package_file)
+      BootLoader.compile(target, output_file, module_name, references, package_file)
     end
+    output_file
   end
 end
 
