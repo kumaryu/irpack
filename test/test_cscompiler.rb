@@ -22,10 +22,11 @@ freely, subject to the following restrictions:
 =end
 
 require 'test/unit'
-require 'tempfile'
 require 'irpack/cscompiler'
+require 'utils'
 
 class TC_CSCompiler < Test::Unit::TestCase
+  include Utils
   def test_system_assemblies
     assert_equal(IRPack::CSCompiler.system_assemblies(4), [
       'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089',
@@ -64,18 +65,17 @@ class TC_CSCompiler < Test::Unit::TestCase
     CS
     references = []
     resources = []
-    output_file = Tempfile.new(File.basename(__FILE__))
-    output_file.close
+    output_file = tempfilename('.dll')
     result = IRPack::CSCompiler.compile(
       :dll,
-      output_file.path,
+      output_file,
       src,
       references,
       resources)
-    assert_equal(output_file.path, result)
+    assert_equal(output_file, result)
     asm = nil
     assert_nothing_raised do
-      asm = System::Reflection::Assembly.load_from(output_file.path)
+      asm = System::Reflection::Assembly.load_from(output_file)
     end
     assert(asm.get_type('hoge.Hoge'))
     assert_nil(asm.entry_point)

@@ -62,7 +62,7 @@ class TC_IRPack_BootLoader < Test::Unit::TestCase
     compile_entrypoint(entrypoint, module_name)
     package = create_package(package_file, 'TestModule.EntryPoint.dll' => File.open(entrypoint, 'rb') {|f| f.read })
 
-    exe = tempfilename+'.exe'
+    exe = tempfilename('.exe')
     assert_equal(exe, IRPack::BootLoader.compile(:exe, exe, module_name, references, package_file))
     res = `#{exe}`.chomp
     assert_equal('Hello World!', res)

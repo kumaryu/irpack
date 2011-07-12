@@ -56,8 +56,8 @@ module Utils
     package
   end
 
-  def tempfilename
-    tmp = Tempfile.open(File.basename(__FILE__))
+  def tempfilename(suffix='')
+    tmp = Tempfile.open([File.basename($0), suffix])
     tmp.close
     $tempfiles ||= []
     $tempfiles << tmp

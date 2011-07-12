@@ -29,9 +29,7 @@ class TC_IRPack_EntryPoint < Test::Unit::TestCase
   include Utils
 
   def test_compile
-    file = Tempfile.open(File.basename(__FILE__))
-    file.close
-    output_file = file.path
+    output_file = tempfilename('.dll')
     module_name = 'TestModule'
     entry_file = 'foo.rb'
     references = ironruby_assemblies
@@ -49,6 +47,52 @@ class TC_IRPack_EntryPoint < Test::Unit::TestCase
     create_package('foo.rb' => 'exit ARGV.size') do |package|
       res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(['hoge', 'fuga', 'piyo'])]))
       assert_equal(3, res)
+    end
+  end
+
+  def test_run
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    puts 'Hello World!'
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+      assert_equal(0, res)
+    end
+  end
+
+  def test_run_raised
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    raise RuntimeError, 'Hello Exception!'
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      res = nil
+      err = System::IO::StringWriter.new
+      assert_nothing_raised do
+        prev_err = System::Console.error
+        System::Console.set_error(err)
+        res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+        System::Console.set_error(prev_err)
+      end
+      assert_match(/Hello Exception!/, err.get_string_builder.to_string)
+      assert_equal(-1, res)
     end
   end
 end
