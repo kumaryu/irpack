@@ -4,21 +4,119 @@ irpack converts your IronRuby scripts to a standalone .exe file.
 Generated executable does not require IronRuby, but only .NET Framework or mono.
 
 ==Requirements
-IronRuby 1.1 or later.
+IronRuby 1.1.3 or later.
+
+==Installation
+
+  $ igem install irpack
+
+You need to use igem (gem command for IronRuby) instead of gem.
 
 ==Usage
-  $ irpack [options] ENTRYFILE
-      -d SOURCEDIR                     Specify pack directory. [base of ENTRYFILE]
-      -o OUTPUTFILE                    Specify output file name.
-      -w                               Generate window app.
-      -W                               Generate console app.[default]
-          --compress                   Compress package.
-          --no-stdlib                  Do not include IronRuby assemblies.
+  $ irpack [options] ENTRYFILE [EMBEDFILES...]
+      -d BASEDIR      Specify base directory. [base of ENTRYFILE]
+      -o OUTPUTFILE   Specify output file name.
+          -window     Generate window app.
+          --console   Generate console app.[default]
+          --compress  Compress package.
+          --no-embed  Do not embed IronRuby assemblies.
+
+Specify rb file on ENTRYFILE to generate exe. Executables includes ENTRYFILE and
+IronRuby dlls in their resource.
+
+When runtime, script can open EMBEDFILES with relative path from BASEDIR.
+
+for example:
+  $ irpack -o hoge/fuga.exe -d foo bar/entry.rb foo/hello.rb
+
+hoge/fuga.exe runs embedded bar/entry.rb.
+To load foo/hello.rb, require 'hello' (relative path from BASEDIR 'foo').
+A real file is used if hello.rb exists in both embedded and real filesystem in
+same directory as executable.
+
+To specify exe icon, embed ico file.
+
+To generate application which has no console window use '--window' option.
+
+'--no-embed' option exclude IronRuby dlls from embedded files. A generated
+executable requires IronRuby dlls.
+
+Executable file is compacted by '--compress' option that compresses embedded
+files. To load compressed file costs extra time.
+
+==Limitations
+Embedded native dlls and mixed (C++/CLI) assemblies are not loadable.
+
+=irpack
+
+irpackはIronRubyのスクリプトを単体で動く.exeファイルに変換するアプリケーションで
+す。生成した実行ファイルは.NET FrameworkやmonoさえあればIronRubyをインストールし
+ていない環境でも動かすことができます。
+
+==動作環境
+IronRuby 1.1.3以降。
+
+==インストール
+
+  $ igem install irpack
+
+IronRubyでしか動かないのでigem (IronRubyのgemコマンド)を使ってインストールしてく
+ださい。
+
+==使い方
+
+  $ irpack [options] ENTRYFILE [EMBEDFILES...]
+      -d BASEDIR      埋め込み基準のディレクトリを指定します。[ENTRYFILEのあるディレクトリ]
+      -o OUTPUTFILE   出力ファイル名を指定します。[ENTRYFILEの拡張子を.exeにしたもの]
+          --window    ウィンドウアプリを生成します。
+          --console   コンソールアプリを生成します。[default]
+          --compress  パッケージの圧縮をします。
+          --no-embed  IronRubyの埋め込みを行いません。
+
+ENTRYFILEに起動するrbファイルを指定するとexeファイルが生成されます。exeファイル
+にはENTRYFILEとIronRubyのdllが埋め込まれるので.NET Frameworkやmonoが入っている環
+境でIronRubyのインストール無しに実行することができます。
+
+ENTRYFILEに続けてファイルを指定することによって他のファイルもexeに埋め込むことが
+できます。
+
+埋め込まれたファイルはスクリプト中からは「実行ファイルのディレクトリ/基準ディレク
+トリからの相対パス」に存在するように見えます。
+たとえば、
+
+  $ irpack -o hoge/fuga.exe -d foo bar/entry.rb foo/hello.rb
+
+としたときにfuga.exeの実行中(bar/entry.rb)からはfoo/hello.rbはhoge/hello.rb
+(fuga.exeのあるディレクトリhoge)にあるように見えます。
+もしhoge/hello.rbが本当にファイルとして存在した場合はそちらが優先して開かれます。
+
+EMBEDFILESにアイコン(.ico)ファイルを指定するとexeのアイコンとして使用します。
+
+'--console'や'--window'オプションでコンソールアプリを生成するかウィンドウアプリを
+生成するか指定できます。省略時はコンソールアプリになります。ウィンドウアプリの場
+合はコンソールウィンドウが開かなくなりますが、標準入出力は使用できません。また例
+外が捕捉されずに落ちた場合のメッセージは標準エラー出力に出るようになっていますが、
+ウィンドウアプリの場合はそれも表示されません。
+
+'--no-embed'オプションを指定するとIronRuby.dllなどをexeに埋め込みません。配布する
+場合は実行環境にIronRubyがインストールするかIronRuby.dllなどの必要なdllを同じディ
+レクトリに置いて実行してください。
+
+'--compress'オプションは埋め込んだファイルを圧縮します。実行ファイルのサイズが小さ
+くなりますが、読み込みに時間がかかるようになります。
+
+==制限
+C++/CLIの混合アセンブリやネイティブdllは埋め込めません。
+
+生成したexeは生成に使用したIronRubyと同じバージョンの.NET Frameworkかそれに対応
+するmonoが必要です。
+.NET Framework 4のir.exeを使って生成したexeを実行するには.NET Framework4か
+mono 2.8以降が必要ということです。
 
 ==License
 zlib/libpng License.
 
-    Copyright (c) 2010 Ryuichi Sakamoto.
+    Copyright (c) 2010-2011 Ryuichi Sakamoto.
 
     This software is provided 'as-is', without any express or implied
     warranty. In no event will the authors be held liable for any damages
