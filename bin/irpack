@@ -23,7 +23,7 @@ freely, subject to the following restrictions:
     distribution.
 =end
 
-require 'irpack'
+require 'irpack/application'
 
 args = IRPack::Application::Arguments.parse!(ARGV)
 exit(IRPack::Application.run(args))
