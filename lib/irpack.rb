@@ -64,6 +64,7 @@ module IRPack
       :embed_references => true,
       :module_name      => path_to_module_name(output_file)
     }.update(opts)
+    output_file = File.expand_path(output_file)
     basename    = File.basename(output_file, '.*')
     module_name = opts[:module_name]
     target      = opts[:target]

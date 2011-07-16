@@ -68,7 +68,7 @@ class TC_IRPack < Test::Unit::TestCase
       hello => 'hello.rb',
     }
     outfile = tempfilename('.exe')
-    assert_equal(outfile, IRPack.pack(outfile, files, 'entry.rb'))
+    assert_equal(File.expand_path(outfile), IRPack.pack(outfile, files, 'entry.rb'))
     assert_equal('Hello World!', `#{outfile}`.chomp)
   end
 end
