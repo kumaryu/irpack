@@ -70,7 +70,7 @@ module IRPack
                 return asm;
               }
             }
-            throw new FileNotFoundException(e.Name);
+            return null;
           });
           var stream = Assembly.GetEntryAssembly().GetManifestResourceStream(@"<%= package_file %>");
           var package = Package.Open(stream, FileMode.Open, FileAccess.Read);
