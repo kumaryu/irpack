@@ -61,6 +61,7 @@ module IRPack
           }
         }
 
+        [STAThread]
         public static int Main(string[] args)
         {
           AppDomain domain = AppDomain.CurrentDomain;
