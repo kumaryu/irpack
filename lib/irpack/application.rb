@@ -79,7 +79,7 @@ module IRPack
         args.entry_file,
         :target => args.target,
         :compress => args.compress,
-        :embed_references => args.embed)
+        :embed_references => args.embed_references)
       return 0
     end
   end
