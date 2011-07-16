@@ -88,7 +88,7 @@ module IRPack
           public override Assembly LoadAssemblyFromPath(string path)
           {
             try {
-              return Assembly.LoadFile(path);
+              return Assembly.LoadFile(path.Replace("/", "\\\\"));
             }
             catch (FileNotFoundException e) {
               var uri = ToPackageLoadPath(path);
