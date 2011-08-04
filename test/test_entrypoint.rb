@@ -95,5 +95,25 @@ class TC_IRPack_EntryPoint < Test::Unit::TestCase
       assert_equal(-1, res)
     end
   end
+
+  def test_load_assembly
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.StringIO'
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      assert_nothing_raised do
+        main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+      end
+    end
+  end
 end
 

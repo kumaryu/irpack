@@ -78,7 +78,7 @@ module IRPack
           public override Assembly LoadAssembly(string name)
           {
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()) {
-              if (asm.FullName==name) {
+              if (asm.FullName==name || asm.GetName().Name==name) {
                 return asm;
               }
             }
