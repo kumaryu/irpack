@@ -25,7 +25,7 @@ require 'rake/testtask'
 require 'rake/gempackagetask'
 require 'rubygems'
 
-PKG_VERSION = '0.2.2'
+PKG_VERSION = '0.2.3'
 
 spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
