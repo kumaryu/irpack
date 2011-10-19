@@ -38,7 +38,7 @@ if not Dir.respond_to?(:mktmpdir) or
     begin
       block.call(path)
     ensure
-      FileUtils.remove_entry(path)
+      FileUtils.remove_entry(path, true)
     end
   end
 end
