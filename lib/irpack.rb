@@ -57,10 +57,31 @@ module IRPack
     }.collect {|asm| asm.location }
   end
 
+  def ironruby_standard_library_version
+    ruby_context = binding.clr_member(:LocalScope).call.ruby_context
+    ruby_context.standard_library_version
+  end
+
+  def ironruby_library_path
+    ruby_context = binding.clr_member(:LocalScope).call.ruby_context
+    binpath = ENV[ruby_context.class.bin_dir_environment_variable] ||
+              File.dirname(System::Reflection::Assembly.get_entry_assembly.location)
+    File.expand_path(File.join(binpath, '..', 'Lib'))
+  end
+
+  def ironruby_libraries(dstpath='stdlib', srcpath=ironruby_library_path)
+    res = {}
+    Dir.glob(File.join(srcpath, "{ironruby,ruby/#{ironruby_standard_library_version}}", '**', '*')) do |fn|
+      res[fn] = fn.sub(/^#{srcpath}/, dstpath) if File.file?(fn)
+    end
+    res
+  end
+
   def pack(output_file, files, entry_file, opts={})
     opts = {
       :target           => :exe,
       :compress         => false,
+      :complete         => false,
       :embed_references => true,
       :module_name      => path_to_module_name(output_file)
     }.update(opts)
@@ -71,6 +92,7 @@ module IRPack
     references  = opts[:references] || ironruby_assemblies
     compress    = opts[:compress]
     pack_files  = {}.merge(files)
+    pack_files  = ironruby_libraries.merge(pack_files) if opts[:complete]
     if opts[:embed_references] then
       references.each do |asm|
         pack_files[asm] = File.basename(asm)

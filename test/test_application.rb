@@ -39,6 +39,7 @@ class TC_ApplicationArguments < Test::Unit::TestCase
     argv = ['entry.rb']
     args = IRPack::Application::Arguments.parse!(argv)
     assert(!args.compress)
+    assert(!args.complete)
     assert(args.embed_references)
     assert_equal(:exe, args.target)
     assert_equal(File.expand_path('entry.exe'), File.expand_path(args.output_file))
@@ -75,6 +76,12 @@ class TC_ApplicationArguments < Test::Unit::TestCase
     argv = ['--compress', 'entry.rb']
     args = IRPack::Application::Arguments.parse!(argv)
     assert(args.compress)
+  end
+
+  def test_parse_complete
+    argv = ['--complete', 'entry.rb']
+    args = IRPack::Application::Arguments.parse!(argv)
+    assert(args.complete)
   end
 
   def test_parse_basedir

@@ -31,6 +31,7 @@ module IRPack
       :output_file,
       :target,
       :compress,
+      :complete,
       :embed_references,
       :entry_file,
       :files) do
@@ -40,6 +41,7 @@ module IRPack
         args.output_file = nil
         args.target      = :exe
         args.compress    = false
+        args.complete    = false
         args.embed_references = true
         args.entry_file  = nil
         args.files = {}
@@ -49,6 +51,7 @@ module IRPack
         opt.on('--window',      'Generate window app.') { args.target = :winexe }
         opt.on('--console',     'Generate console app.[default]') { args.target = :exe }
         opt.on('--compress',    'Compress package.') { args.compress = true }
+        opt.on('--complete',    'Embed all standard libraries.') { args.complete = true }
         opt.on('--no-embed',    'Do not embed IronRuby assemblies.') {|v| args.embed_references = v }
         opt.banner = "Usage: #{$0} [options] ENTRYFILE [EMBEDFILES...]"
         opt.parse!(argv)
@@ -79,6 +82,7 @@ module IRPack
         args.entry_file,
         :target => args.target,
         :compress => args.compress,
+        :complete => args.complete,
         :embed_references => args.embed_references)
       return 0
     end

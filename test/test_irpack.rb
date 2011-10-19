@@ -46,6 +46,27 @@ class TC_IRPack < Test::Unit::TestCase
     end
   end
 
+  def test_ironruby_library_path_with_env
+    ENV['IRONRUBY_11'] = 'c:/foo/bar/bin'
+    assert_equal('c:/foo/bar/Lib', IRPack.ironruby_library_path)
+  end
+
+  def test_ironruby_library_path_without_env
+    ENV['IRONRUBY_11'] = nil
+    binpath = File.dirname(System::Reflection::Assembly.get_entry_assembly.location)
+    assert_equal(File.expand_path(File.join(binpath, '../Lib')), IRPack.ironruby_library_path)
+  end
+
+  def test_ironruby_libraries
+    libs = IRPack.ironruby_libraries
+    assert(libs.size>0)
+    libs.each do |src, dst|
+      assert_match(/^stdlib\/((ruby\/1\.9\.1|ironruby)\/.+)/, dst)
+      assert_match(/#{$1}$/, src)
+      assert(File.file?(src))
+    end
+  end
+
   def test_pack
     entry = Tempfile.open(File.basename(__FILE__)) do |f|
       f.write <<-RB
@@ -70,6 +91,23 @@ class TC_IRPack < Test::Unit::TestCase
     outfile = tempfilename('.exe')
     assert_equal(File.expand_path(outfile), IRPack.pack(outfile, files, 'entry.rb'))
     assert_equal('Hello World!', `#{outfile}`.chomp)
+  end
+
+  def test_pack_with_complete
+    entry = Tempfile.open(File.basename(__FILE__)) do |f|
+      f.write <<-RB
+      require 'stringio'
+      io = StringIO.new('Hello')
+      puts io.read
+      RB
+      f.path
+    end
+    files = {
+      entry => 'entry.rb',
+    }
+    outfile = tempfilename('.exe')
+    assert_equal(File.expand_path(outfile), IRPack.pack(outfile, files, 'entry.rb', complete: true))
+    assert_equal('Hello', `#{outfile}`.chomp)
   end
 end
 

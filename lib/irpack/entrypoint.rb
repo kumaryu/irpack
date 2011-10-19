@@ -179,7 +179,7 @@ module IRPack
           runtime_setup.Options["MainFile"]  = entry_file;
           runtime_setup.Options["Arguments"] = args;
           runtime_setup.Options["ApplicationBase"] = entry_path;
-          runtime_setup.Options["StandardLibrary"] = Path.Combine(entry_path, "lib");
+          runtime_setup.Options["StandardLibrary"] = Path.Combine(entry_path, "stdlib");
           runtime_setup.HostType = typeof(IRHost);
           runtime_setup.HostArguments = new object[] { package };
           var engine = IronRuby.Ruby.GetEngine(IronRuby.Ruby.CreateRuntime(runtime_setup));
