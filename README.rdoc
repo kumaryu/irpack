@@ -16,9 +16,10 @@ You need to use igem (gem command for IronRuby) instead of gem.
   $ irpack [options] ENTRYFILE [EMBEDFILES...]
       -d BASEDIR      Specify base directory. [base of ENTRYFILE]
       -o OUTPUTFILE   Specify output file name.
-          -window     Generate window app.
+          --window    Generate window app.
           --console   Generate console app.[default]
           --compress  Compress package.
+          --complete  Embed all standard libraries.
           --no-embed  Do not embed IronRuby assemblies.
 
 Specify rb file on ENTRYFILE to generate exe. Executables includes ENTRYFILE and
@@ -40,6 +41,9 @@ To generate application which has no console window use '--window' option.
 
 '--no-embed' option exclude IronRuby dlls from embedded files. A generated
 executable requires IronRuby dlls.
+
+If scripts use any standard libraries, embed them too. '--complete' embeds
+all of standard libraries into exe.
 
 Executable file is compacted by '--compress' option that compresses embedded
 files. To load compressed file costs extra time.
@@ -71,6 +75,7 @@ IronRubyでしか動かないのでigem (IronRubyのgemコマンド)を使って
           --window    ウィンドウアプリを生成します。
           --console   コンソールアプリを生成します。[default]
           --compress  パッケージの圧縮をします。
+          --complete  全ての標準ライブラリを埋め込みます。
           --no-embed  IronRubyの埋め込みを行いません。
 
 ENTRYFILEに起動するrbファイルを指定するとexeファイルが生成されます。exeファイル
@@ -101,6 +106,10 @@ EMBEDFILESにアイコン(.ico)ファイルを指定するとexeのアイコン�
 '--no-embed'オプションを指定するとIronRuby.dllなどをexeに埋め込みません。配布する
 場合は実行環境にIronRubyがインストールするかIronRuby.dllなどの必要なdllを同じディ
 レクトリに置いて実行してください。
+
+標準ライブラリを使用する場合は、使用するライブラリも埋め込まなければいけません。
+'--complete'オプションを指定すると標準ライブラリを全て埋め込みます。実行ファイル
+サイズはその分大きくなります。
 
 '--compress'オプションは埋め込んだファイルを圧縮します。実行ファイルのサイズが小さ
 くなりますが、読み込みに時間がかかるようになります。
