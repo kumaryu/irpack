@@ -33,8 +33,9 @@ class TC_IRPack_EntryPoint < Test::Unit::TestCase
     module_name = 'TestModule'
     entry_file = 'foo.rb'
     references = ironruby_assemblies
+    runtime_options = {}
 
-    assert_equal(output_file, IRPack::EntryPoint.compile(output_file, module_name, entry_file, references))
+    assert_equal(output_file, IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options))
     assert(File.exist?(output_file))
     asm = nil
     assert_nothing_raised do
@@ -55,8 +56,9 @@ class TC_IRPack_EntryPoint < Test::Unit::TestCase
     module_name = 'TestModule'
     entry_file = 'main.rb'
     references = ironruby_assemblies
+    runtime_options = {}
 
-    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references)
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
     asm = System::Reflection::Assembly.load_from(output_file)
     main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
     assert_not_nil(main)
@@ -74,8 +76,9 @@ class TC_IRPack_EntryPoint < Test::Unit::TestCase
     module_name = 'TestModule'
     entry_file = 'main.rb'
     references = ironruby_assemblies
+    runtime_options = {}
 
-    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references)
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
     asm = System::Reflection::Assembly.load_from(output_file)
     main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
     assert_not_nil(main)
@@ -101,8 +104,9 @@ class TC_IRPack_EntryPoint < Test::Unit::TestCase
     module_name = 'TestModule'
     entry_file = 'main.rb'
     references = ironruby_assemblies
+    runtime_options = {}
 
-    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references)
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
     asm = System::Reflection::Assembly.load_from(output_file)
     main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
     assert_not_nil(main)
@@ -112,6 +116,170 @@ class TC_IRPack_EntryPoint < Test::Unit::TestCase
     create_package('main.rb' => main_rb) do |package|
       assert_nothing_raised do
         main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+      end
+    end
+  end
+
+  def test_search_paths
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+    runtime_options = {
+      SearchPaths: [
+        'foo',
+        '../bar',
+      ],
+    }
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    if $:.any? {|path| /foo$/=~path } and
+       $:.any? {|path| /bar$/=~path } then
+      exit 0
+    else
+      exit 1
+    end
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+      assert_equal(0, res)
+    end
+  end
+
+  def test_required_paths
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+    runtime_options = {
+      RequiredPaths: [
+        'stringio',
+        'date',
+      ],
+      StandardLibrary: '../Lib',
+    }
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    required_constants = [:StringIO, :DateTime]
+    if required_constants.all? {|const| Object.constants.include?(const) } then
+      exit 0
+    else
+      exit 1
+    end
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+      assert_equal(0, res)
+    end
+  end
+
+  def test_debug_variable
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+    runtime_options = {
+      DebugVariable: true,
+    }
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    exit($DEBUG ? 0 : 1)
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+      assert_equal(0, res)
+    end
+  end
+
+  def test_profile
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+    runtime_options = {
+      Profile: true,
+    }
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    begin
+      IronRuby::Clr.profile { 1 + 1 }
+      exit 0
+    rescue SystemCallError
+      exit 1
+    end
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+      assert_equal(0, res)
+    end
+  end
+
+  def test_enable_tracing
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+    runtime_options = {
+      EnableTracing: true,
+    }
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    begin
+      set_trace_func(proc { nil })
+      exit 0
+    rescue System::NotSupportedException
+      exit 1
+    end
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      res = main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+      assert_equal(0, res)
+    end
+  end
+
+  def test_pass_exceptions
+    output_file = tempfilename('.dll')
+    module_name = 'TestModule'
+    entry_file = 'main.rb'
+    references = ironruby_assemblies
+    runtime_options = {
+      PassExceptions: true,
+    }
+
+    IRPack::EntryPoint.compile(output_file, module_name, entry_file, references, runtime_options)
+    asm = System::Reflection::Assembly.load_from(output_file)
+    main = asm.get_type("#{module_name}.EntryPoint").get_method('Main')
+    assert_not_nil(main)
+    main_rb = <<-RB
+    raise System::ApplicationException, 'Exception Test'
+    RB
+    create_package('main.rb' => main_rb) do |package|
+      assert_raise(System::ApplicationException) do
+        begin
+          main.invoke(nil, System::Array[System::Object].new([package, System::Array[System::String].new(0)]))
+        rescue System::Reflection::TargetInvocationException => e
+          raise e.InnerException
+        end
       end
     end
   end

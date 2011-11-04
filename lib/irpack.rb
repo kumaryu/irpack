@@ -77,14 +77,29 @@ module IRPack
     res
   end
 
-  def pack(output_file, files, entry_file, opts={})
+  def pack(output_file, files, entry_file, opts={}, runtime_options={})
     opts = {
-      :target           => :exe,
-      :compress         => false,
-      :complete         => false,
-      :embed_references => true,
-      :module_name      => path_to_module_name(output_file)
+      target:           :exe,
+      compress:         false,
+      complete:         false,
+      embed_references: true,
+      seach_paths:      [],
+      module_name:      path_to_module_name(output_file),
     }.update(opts)
+    runtime_options = {
+      DebugMode:             false,
+      PrivateBinding:        false,
+      NoAdaptiveCompilation: false,
+      CompilationThreshold:  -1,
+      ExceptionDetail:       false,
+      ShowClrExceptions:     false,
+      Profile:               false,
+      Verbosity:             1,
+      DebugVariable:         false,
+      EnableTracing:         false,
+      RequiredPaths:         [],
+      SearchPaths:           [],
+    }.update(runtime_options)
     output_file = File.expand_path(output_file)
     basename    = File.basename(output_file, '.*')
     module_name = opts[:module_name]
@@ -101,7 +116,7 @@ module IRPack
 
     Dir.mktmpdir(File.basename($0,'.*')) do |tmp_path|
       entry_dll = File.join(tmp_path, module_name+'.EntryPoint.dll')
-      EntryPoint.compile(entry_dll, module_name, entry_file, references)
+      EntryPoint.compile(entry_dll, module_name, entry_file, references, runtime_options)
       pack_files[entry_dll] = File.basename(entry_dll)
 
       package_file = File.join(tmp_path, basename+'.pkg')

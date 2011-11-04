@@ -176,19 +176,46 @@ module IRPack
           var entry_file = Path.Combine(entry_path, "<%= entry_file %>");
           var runtime_setup = new ScriptRuntimeSetup();
           runtime_setup.LanguageSetups.Add(IronRuby.Ruby.CreateRubySetup());
-          runtime_setup.Options["MainFile"]  = entry_file;
-          runtime_setup.Options["Arguments"] = args;
+          runtime_setup.DebugMode      = <%= options[:DebugMode] %>; 
+          runtime_setup.PrivateBinding = <%= options[:PrivateBinding] %>; 
+          runtime_setup.Options["NoAdaptiveCompilation"] = <%= options[:NoAdaptiveCompilation] %>;
+          runtime_setup.Options["CompilationThreshold"]  = <%= options[:CompilationThreshold] %>;
+          runtime_setup.Options["ExceptionDetail"]       = <%= options[:ExceptionDetail] %>; 
+          runtime_setup.Options["ShowClrExceptions"]     = <%= options[:ShowClrExceptions] %>; 
+          runtime_setup.Options["Profile"]       = <%= options[:Profile] %>;
+          runtime_setup.Options["Verbosity"]     = <%= options[:Verbosity] %>;
+          runtime_setup.Options["DebugVariable"] = <%= options[:DebugVariable] %>;
+          runtime_setup.Options["EnableTracing"] = <%= options[:EnableTracing] %>;
+          runtime_setup.Options["RequiredPaths"] = new string[] {
+            <%= options[:RequiredPaths].collect {|v| '@"' + v + '"'}.join(", ") %>
+          };
+          var search_paths = new string[] {
+            <%= options[:SearchPaths].collect   {|v| '@"' + v + '"'}.join(", ") %>
+          };
+          for (int i=0; i<search_paths.Length; i++) {
+            if (!Path.IsPathRooted(search_paths[i])) {
+              search_paths[i] = Path.GetFullPath(Path.Combine(entry_path, search_paths[i]));
+            }
+          }
+          runtime_setup.Options["SearchPaths"]     = search_paths;
+          runtime_setup.Options["MainFile"]        = entry_file;
+          runtime_setup.Options["Arguments"]       = args;
           runtime_setup.Options["ApplicationBase"] = entry_path;
-          runtime_setup.Options["StandardLibrary"] = Path.Combine(entry_path, "stdlib");
+          var stdlib = "<%= options[:StandardLibrary] %>";
+          if (Path.IsPathRooted(stdlib)) {
+            runtime_setup.Options["StandardLibrary"] = stdlib;
+          }
+          else {
+            runtime_setup.Options["StandardLibrary"] = Path.GetFullPath(Path.Combine(entry_path, stdlib));
+          }
           runtime_setup.HostType = typeof(IRHost);
           runtime_setup.HostArguments = new object[] { package };
           var engine = IronRuby.Ruby.GetEngine(IronRuby.Ruby.CreateRuntime(runtime_setup));
+          <% if options[:PassExceptions] then %>
+          return engine.CreateScriptSourceFromFile(entry_file).ExecuteProgram();
+          <% else %>
           try {
-            engine.ExecuteFile(entry_file);
-            return 0;
-          }
-          catch (IronRuby.Builtins.SystemExit e) {
-            return e.Status;
+            return engine.CreateScriptSourceFromFile(entry_file).ExecuteProgram();
           }
           catch (Exception e) {
             var thread_abort = e as System.Threading.ThreadAbortException;
@@ -197,17 +224,34 @@ module IRPack
             }
             return -1;
           }
+          <% end %>
         }
       }
     }
 CS
     module_function
-    def source(module_name, entry_file)
+    DefaultOptions = {
+      DebugMode:             false,
+      PrivateBinding:        false,
+      NoAdaptiveCompilation: false,
+      CompilationThreshold:  -1,
+      ExceptionDetail:       false,
+      ShowClrExceptions:     false,
+      Profile:               false,
+      Verbosity:             1,
+      DebugVariable:         false,
+      EnableTracing:         false,
+      RequiredPaths:         [],
+      SearchPaths:           [],
+      StandardLibrary:       'stdlib',
+    }
+    def source(module_name, entry_file, options={})
+      options = DefaultOptions.merge(options)
       ERB.new(Source).result(binding)
     end
 
-    def compile(output_file, module_name, entry_file, references)
-      src = source(module_name, entry_file)
+    def compile(output_file, module_name, entry_file, references, options={})
+      src = source(module_name, entry_file, options)
       sysasm = IRPack::CSCompiler.system_assemblies.collect {|asm|
         IRPack::CSCompiler.assembly_location(asm)
       }
