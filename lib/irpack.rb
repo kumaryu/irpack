@@ -33,6 +33,7 @@ module IRPack
     Microsoft.Dynamic
     Microsoft.Scripting
     Microsoft.Scripting.Core
+    Microsoft.Scripting.Metadata
     IronRuby
     IronRuby.Libraries
     IronRuby.Libraries.Yaml
