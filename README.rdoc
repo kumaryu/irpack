@@ -14,13 +14,32 @@ You need to use igem (gem command for IronRuby) instead of gem.
 
 ==Usage
   $ irpack [options] ENTRYFILE [EMBEDFILES...]
-      -d BASEDIR      Specify base directory. [base of ENTRYFILE]
-      -o OUTPUTFILE   Specify output file name.
-          --window    Generate window app.
-          --console   Generate console app.[default]
-          --compress  Compress package.
-          --complete  Embed all standard libraries.
-          --no-embed  Do not embed IronRuby assemblies.
+    -b BASEDIR               Specify base directory. [base of ENTRYFILE]
+    -o OUTPUTFILE            Specify output file name.
+        --window             Generate window app.
+        --console            Generate console app.[default]
+        --compress           Compress package.
+        --complete           Embed all standard libraries.
+        --no-embed           Do not embed IronRuby assemblies.
+  Runtime options:
+    -Idirectory              specify $LOAD_PATH directory (may be used more than once)
+    -rlibrary                require the library, before executing your script
+    -d                       set debugging flags (set $DEBUG to true)
+    -D                       emit debugging information (PDBs) for Visual Studio debugger
+    -v                       print version number, then turn on verbose mode
+    -w                       turn warnings on for your script
+    -W[level]                set warning level; 0=silence, 1=medium (default), 2=verbose
+        --trace              enable support for set_trace_func
+        --profile            enable support for 'pi = IronRuby::Clr.profile { block_to_profile }'
+        --exception-detail   enable ExceptionDetail mode
+        --no-adaptive-compilation
+                             disable adaptive compilation - all code will be compiled
+        --compilation-threshold THRESHOLD
+                             the number of iterations before the interpreter starts compiling
+        --pass-exceptions    do not catch exceptions that are unhandled by script code
+        --private-binding    enable binding to private members
+        --show-clr-exceptions
+                             display CLS Exception information
 
 Specify rb file on ENTRYFILE to generate exe. Executables includes ENTRYFILE and
 IronRuby dlls in their resource.
@@ -48,6 +67,9 @@ all of standard libraries into exe.
 Executable file is compacted by '--compress' option that compresses embedded
 files. To load compressed file costs extra time.
 
+Runtime options are passed to script engine when generated executable started
+as well as ir.exe.
+
 ==Limitations
 Embedded native dlls and mixed (C++/CLI) assemblies are not loadable.
 
@@ -70,13 +92,33 @@ IronRubyでしか動かないのでigem (IronRubyのgemコマンド)を使って
 ==使い方
 
   $ irpack [options] ENTRYFILE [EMBEDFILES...]
-      -d BASEDIR      埋め込み基準のディレクトリを指定します。[ENTRYFILEのあるディレクトリ]
-      -o OUTPUTFILE   出力ファイル名を指定します。[ENTRYFILEの拡張子を.exeにしたもの]
-          --window    ウィンドウアプリを生成します。
-          --console   コンソールアプリを生成します。[default]
-          --compress  パッケージの圧縮をします。
-          --complete  全ての標準ライブラリを埋め込みます。
-          --no-embed  IronRubyの埋め込みを行いません。
+    -b BASEDIR               埋め込み基準のディレクトリを指定します。[ENTRYFILEのあるディレクトリ]
+    -o OUTPUTFILE            出力ファイル名を指定します。[ENTRYFILEの拡張子を.exeにしたもの]
+        --window             ウィンドウアプリを生成します。
+        --console            コンソールアプリを生成します。[default]
+        --compress           パッケージの圧縮をします。
+        --complete           全ての標準ライブラリを埋め込みます。
+        --no-embed           IronRubyの埋め込みを行いません。
+  実行時オプション:
+    -Idirectory              $LOAD_PATHディレクトリを指定します。(複数回指定できます。)
+    -rlibrary                スクリプト実行前にlibraryを読み込みます。
+    -d                       デバッグフラグを設定します。($DEBUGをtrueに設定します。)
+    -D                       Visual Studioデバッガ用にデバッグ情報(PDB)を生成します。
+    -v                       バージョン番号を出力し、冗長モードを有効にします。
+    -w                       スクリプトの警告を有効します。
+    -W[level]                警告レベルを設定します: 0=無し, 1=普通(デフォルト), 2=冗長
+        --trace              set_trace_funcサポートを有効にします。
+        --profile            CLRプロファイラを有効にします。次のように使います
+                             'pi = IronRuby::Clr.profile { block_to_profile }'
+        --exception-detail   例外詳細モードを有効にします。
+        --no-adaptive-compilation
+                             適応型コンパイルを無効にします。全てのコードがコンパイルされます。
+        --compilation-threshold THRESHOLD
+                             インタプリタがコンパイル開始するまでの繰り返し回数を指定します。
+        --pass-exceptions    スクリプトで処理されなかった例外をcatchしないようにします。
+        --private-binding    privateメンバへのバインディングを有効にします。
+        --show-clr-exceptions
+                             CLS例外情報を表示します。
 
 ENTRYFILEに起動するrbファイルを指定するとexeファイルが生成されます。exeファイル
 にはENTRYFILEとIronRubyのdllが埋め込まれるので.NET Frameworkやmonoが入っている環
@@ -113,6 +155,9 @@ EMBEDFILESにアイコン(.ico)ファイルを指定するとexeのアイコン�
 
 '--compress'オプションは埋め込んだファイルを圧縮します。実行ファイルのサイズが小さ
 くなりますが、読み込みに時間がかかるようになります。
+
+実行時オプションは生成した実行ファイルの起動時にスクリプトエンジンに渡されます。
+ir.exeに指定するのと同じものです。
 
 ==制限
 C++/CLIの混合アセンブリやネイティブdllは埋め込めません。
