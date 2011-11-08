@@ -22,28 +22,37 @@ freely, subject to the following restrictions:
 =end
 
 require 'rake/testtask'
+require 'rake/rdoctask'
 require 'rake/gempackagetask'
 require 'rubygems'
 
 PKG_VERSION = '0.2.5'
 
+Rake::RDocTask.new do |rd|
+  rd.main = 'README.rdoc'
+  rd.rdoc_files.include('README.rdoc', 'lib/**/*.rb')
+end
+  
 spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
-  s.summary = 'Generate a standalone executable file from IronRuby scripts.'
-  s.name = 'irpack'
-  s.author = 'kumaryu'
-  s.email = 'kumaryu@kumayu.net'
+  s.summary  = 'Generate a standalone executable file from IronRuby scripts.'
+  s.name     = 'irpack'
+  s.author   = 'kumaryu'
+  s.email    = 'kumaryu@kumayu.net'
   s.homepage = 'http://github.com/kumaryu/irpack'
-  s.version = PKG_VERSION
+  s.version  = PKG_VERSION
   s.requirements << 'none'
   s.description = <<EOF
 IRPack converts your IronRuby scripts to a standalone .exe file.
 Generated executable does not require IronRuby, but only .NET Framework or mono.
 EOF
-  s.executable = 'irpack'
-  s.require_path = 'lib'
-  s.bindir = 'bin'
-  s.files = FileList['bin/*', 'lib/**/*.rb', 'test/**/*.rb']
+  s.executable       = 'irpack'
+  s.require_path     = 'lib'
+  s.bindir           = 'bin'
+  s.test_files       = FileList['test/**/*.rb']
+  s.rdoc_options     = ['--main', 'README.rdoc']
+  s.extra_rdoc_files = FileList['README.rdoc']
+  s.files            = FileList['bin/*', 'lib/**/*.rb', 'test/**/*.rb']
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
