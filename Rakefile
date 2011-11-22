@@ -26,7 +26,7 @@ require 'rake/rdoctask'
 require 'rake/gempackagetask'
 require 'rubygems'
 
-PKG_VERSION = '0.2.5'
+PKG_VERSION = '0.2.6'
 
 Rake::RDocTask.new do |rd|
   rd.main = 'README.rdoc'
