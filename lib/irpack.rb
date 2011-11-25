@@ -26,6 +26,7 @@ require 'irpack/bootloader'
 require 'irpack/entrypoint'
 require 'irpack/packager'
 require 'irpack/missing'
+require 'irpack/specification'
 require 'tmpdir'
 
 module IRPack
@@ -73,57 +74,34 @@ module IRPack
   def ironruby_libraries(dstpath='stdlib', srcpath=ironruby_library_path)
     res = {}
     Dir.glob(File.join(srcpath, "{ironruby,ruby/#{ironruby_standard_library_version}}", '**', '*')) do |fn|
-      res[fn] = fn.sub(/^#{srcpath}/, dstpath) if File.file?(fn)
+      res[fn.sub(/^#{srcpath}/, dstpath)] = fn if File.file?(fn)
     end
     res
   end
 
-  def pack(output_file, files, entry_file, opts={}, runtime_options={})
-    opts = {
-      target:           :exe,
-      compress:         false,
-      complete:         false,
-      embed_references: true,
-      seach_paths:      [],
-      module_name:      path_to_module_name(output_file),
-    }.update(opts)
-    runtime_options = {
-      DebugMode:             false,
-      PrivateBinding:        false,
-      NoAdaptiveCompilation: false,
-      CompilationThreshold:  -1,
-      ExceptionDetail:       false,
-      ShowClrExceptions:     false,
-      Profile:               false,
-      Verbosity:             1,
-      DebugVariable:         false,
-      EnableTracing:         false,
-      RequiredPaths:         [],
-      SearchPaths:           [],
-    }.update(runtime_options)
-    output_file = File.expand_path(output_file)
-    basename    = File.basename(output_file, '.*')
-    module_name = opts[:module_name]
-    target      = opts[:target]
-    references  = opts[:references] || ironruby_assemblies
-    compress    = opts[:compress]
-    pack_files  = {}.merge(files)
-    pack_files  = ironruby_libraries.merge(pack_files) if opts[:complete]
-    if opts[:embed_references] then
+  def pack(spec)
+    output_file = File.expand_path(spec.output_file)
+    entry_file  = spec.map_entry
+    basename    = File.basename(spec.output_file, '.*')
+    references  = ironruby_assemblies
+    pack_files  = spec.map_files
+    pack_files  = ironruby_libraries.merge(pack_files) if spec.embed_stdlibs
+    if spec.embed_assemblies then
       references.each do |asm|
-        pack_files[asm] = File.basename(asm)
+        pack_files[File.basename(asm)] = asm
       end
     end
 
+    module_name = spec.module_name || path_to_module_name(output_file)
     Dir.mktmpdir(File.basename($0,'.*')) do |tmp_path|
       entry_dll = File.join(tmp_path, module_name+'.EntryPoint.dll')
-      EntryPoint.compile(entry_dll, module_name, entry_file, references, runtime_options)
-      pack_files[entry_dll] = File.basename(entry_dll)
+      EntryPoint.compile(entry_dll, module_name, entry_file, references, spec.runtime_options.to_hash)
+      pack_files[File.basename(entry_dll)] = entry_dll
 
       package_file = File.join(tmp_path, basename+'.pkg')
-      Packager.pack(pack_files, package_file, compress)
+      Packager.pack(pack_files, package_file, spec.compress)
 
-      BootLoader.compile(target, output_file, module_name, references, package_file)
+      BootLoader.compile(spec.target, output_file, module_name, references, package_file)
     end
     output_file
   end

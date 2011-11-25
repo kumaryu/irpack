@@ -24,6 +24,7 @@ freely, subject to the following restrictions:
 
 require 'test/unit'
 require 'irpack'
+require 'irpack/specification'
 require 'utils'
 
 class TC_IRPack < Test::Unit::TestCase
@@ -60,7 +61,7 @@ class TC_IRPack < Test::Unit::TestCase
   def test_ironruby_libraries
     libs = IRPack.ironruby_libraries
     assert(libs.size>0)
-    libs.each do |src, dst|
+    libs.each do |dst, src|
       assert_match(/^stdlib\/((ruby\/1\.9\.1|ironruby)\/.+)/, dst)
       assert_match(/#{$1}$/, src)
       assert(File.file?(src))
@@ -84,16 +85,18 @@ class TC_IRPack < Test::Unit::TestCase
       RB
       f.path
     end
-    files = {
-      entry => 'entry.rb',
-      hello => 'hello.rb',
+    spec = IRPack::Specification.new
+    spec.files = {
+      'entry.rb' => entry,
+      'hello.rb' => hello,
     }
-    outfile = tempfilename('.exe')
-    assert_equal(File.expand_path(outfile), IRPack.pack(outfile, files, 'entry.rb'))
-    assert_equal('Hello World!', `#{outfile}`.chomp)
+    spec.output_file = tempfilename('.exe')
+    spec.entry_file = 'entry.rb'
+    assert_equal(File.expand_path(spec.output_file), IRPack.pack(spec))
+    assert_equal('Hello World!', `#{spec.output_file}`.chomp)
   end
 
-  def test_pack_with_complete
+  def test_pack_with_embed_stdlibs
     entry = Tempfile.open(File.basename(__FILE__)) do |f|
       f.write <<-RB
       require 'stringio'
@@ -102,12 +105,13 @@ class TC_IRPack < Test::Unit::TestCase
       RB
       f.path
     end
-    files = {
-      entry => 'entry.rb',
+    spec = IRPack::Specification.new {|spec|
+      spec.entry_file = entry
+      spec.output_file = tempfilename('.exe')
+      spec.embed_stdlibs = true
     }
-    outfile = tempfilename('.exe')
-    assert_equal(File.expand_path(outfile), IRPack.pack(outfile, files, 'entry.rb', complete: true))
-    assert_equal('Hello', `#{outfile}`.chomp)
+    assert_equal(File.expand_path(spec.output_file), IRPack.pack(spec))
+    assert_equal('Hello', `#{spec.output_file}`.chomp)
   end
 end
 

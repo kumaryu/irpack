@@ -26,73 +26,89 @@ require 'irpack/application'
 require 'utils'
 require 'stringio'
 
-class TC_ApplicationArguments < Test::Unit::TestCase
+class TC_Application < Test::Unit::TestCase
   include Utils
-  def test_parse_without_args
+  def test_parse_without_spec
     argv = []
     $stderr = StringIO.new
-    assert_nil(IRPack::Application::Arguments.parse!(argv))
+    assert_nil(IRPack::Application.parse!(argv))
     assert_not_equal('', $stderr.to_s)
+    $stderr = STDERR
   end
 
   def test_parse
     argv = ['entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(!args.compress)
-    assert(!args.complete)
-    assert(args.embed_references)
-    assert_equal(:exe, args.target)
-    assert_equal(File.expand_path('entry.exe'), File.expand_path(args.output_file))
-    assert_equal('entry.rb', args.entry_file)
-    assert_equal(1, args.files.size)
-    assert_equal('entry.rb', args.files[File.expand_path('entry.rb')])
-    assert(!args.runtime_options[:DebugVariable])
-    assert(!args.runtime_options[:DebugMode])
-    assert_equal(1, args.runtime_options[:Verbosity])
-    assert(!args.runtime_options[:EnableTracing])
-    assert(!args.runtime_options[:Profile])
-    assert(!args.runtime_options[:ExceptionDetail])
-    assert(!args.runtime_options[:NoAdaptiveCompilation])
-    assert_equal(-1, args.runtime_options[:CompilationThreshold])
-    assert(!args.runtime_options[:PassExceptions])
-    assert(!args.runtime_options[:PrivateBinding])
-    assert(!args.runtime_options[:ShowClrExceptions])
+    spec = IRPack::Application.parse!(argv)
+    assert(!spec.compress)
+    assert(!spec.complete)
+    assert(spec.embed_assemblies)
+    assert_equal(:exe, spec.target)
+    assert_nil(spec.output_file)
+    assert_equal('entry.rb', spec.entry_file)
+    assert_equal('entry.rb', spec.map_entry)
+    assert_equal(0, spec.files.size)
+    pack_files = spec.map_files
+    assert_equal(1, pack_files.size)
+    assert_equal(File.expand_path('entry.rb'), pack_files['entry.rb'])
+    assert(!spec.runtime_options.debug_variable)
+    assert(!spec.runtime_options.debug_mode)
+    assert_equal(1, spec.runtime_options.warning_level)
+    assert(!spec.runtime_options.trace)
+    assert(!spec.runtime_options.profile)
+    assert(!spec.runtime_options.exception_detail)
+    assert(!spec.runtime_options.no_adaptive_compilation)
+    assert_equal(-1, spec.runtime_options.compilation_threshold)
+    assert(!spec.runtime_options.pass_exceptions)
+    assert(!spec.runtime_options.private_binding)
+    assert(!spec.runtime_options.show_clr_exceptions)
   end
 
   def test_parse_output_file
     argv = ['-o', 'foo.exe', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(File.expand_path('foo.exe'), File.expand_path(args.output_file))
+    spec = IRPack::Application.parse!(argv)
+    assert_equal(File.expand_path('foo.exe'), File.expand_path(spec.output_file))
   end
 
   def test_parse_window_app
     argv = ['--window', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(:winexe, args.target)
+    spec = IRPack::Application.parse!(argv)
+    assert_equal(:winexe, spec.target)
   end
 
   def test_parse_console_app
     argv = ['--console', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(:exe, args.target)
+    spec = IRPack::Application.parse!(argv)
+    assert_equal(:exe, spec.target)
   end
 
-  def test_parse_no_embed_references
+  def test_parse_no_embed
     argv = ['--no-embed', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(!args.embed_references)
+    spec = IRPack::Application.parse!(argv)
+    assert(!spec.embed_assemblies)
+  end
+
+  def test_parse_no_embed_assemblies
+    argv = ['--no-embed-assemblies', 'entry.rb']
+    spec = IRPack::Application.parse!(argv)
+    assert(!spec.embed_assemblies)
   end
 
   def test_parse_compress
     argv = ['--compress', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.compress)
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.compress)
   end
 
   def test_parse_complete
     argv = ['--complete', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.complete)
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.complete)
+  end
+
+  def test_parse_embed_stdlibs
+    argv = ['--embed-stdlibs', 'entry.rb']
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.embed_stdlibs)
   end
 
   def test_parse_basedir
@@ -103,98 +119,100 @@ class TC_ApplicationArguments < Test::Unit::TestCase
       File.expand_path('foo/bar/hoge.rb'),
       'foo/bar/hoge/fuga.rb',
     ]
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(File.expand_path('entry.exe'), File.expand_path(args.output_file))
-    assert_equal('../../entry.rb', args.entry_file)
-    assert_equal(4, args.files.size)
-    assert_equal('../../entry.rb', args.files[File.expand_path('entry.rb')])
-    assert_equal('baz.rb', args.files[File.expand_path('foo/bar/baz.rb')])
-    assert_equal('hoge.rb', args.files[File.expand_path('foo/bar/hoge.rb')])
-    assert_equal('hoge/fuga.rb', args.files[File.expand_path('foo/bar/hoge/fuga.rb')])
+    spec = IRPack::Application.parse!(argv)
+    assert_nil(spec.output_file)
+    assert_equal('entry.rb', spec.entry_file)
+    assert_equal('entry.rb', spec.map_entry)
+    pack_files = spec.map_files
+    assert_equal(4, pack_files.size)
+    assert_equal(File.expand_path('entry.rb'),             pack_files['entry.rb'])
+    assert_equal(File.expand_path('foo/bar/baz.rb'),       pack_files['baz.rb'])
+    assert_equal(File.expand_path('foo/bar/hoge.rb'),      pack_files['hoge.rb'])
+    assert_equal(File.expand_path('foo/bar/hoge/fuga.rb'), pack_files['hoge/fuga.rb'])
   end
 
   def test_parse_debug_variable
     argv = ['-d', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:DebugVariable])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.debug_variable)
   end
 
   def test_parse_debug_mode
     argv = ['-D', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:DebugMode])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.debug_mode)
   end
 
   def test_parse_verbose
     argv = ['-v', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(2, args.runtime_options[:Verbosity])
+    spec = IRPack::Application.parse!(argv)
+    assert_equal(2, spec.runtime_options.warning_level)
   end
 
   def test_parse_warn
     argv = ['-w', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(2, args.runtime_options[:Verbosity])
+    spec = IRPack::Application.parse!(argv)
+    assert_equal(2, spec.runtime_options.warning_level)
   end
 
   def test_parse_warning
     argv = ['-W', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(2, args.runtime_options[:Verbosity])
+    spec = IRPack::Application.parse!(argv)
+    assert_equal(2, spec.runtime_options.warning_level)
   end
 
   def test_parse_warning0
     argv = ['-W0', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(0, args.runtime_options[:Verbosity])
+    spec = IRPack::Application.parse!(argv)
+    assert_equal(0, spec.runtime_options.warning_level)
   end
 
   def test_parse_trace
     argv = ['--trace', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:EnableTracing])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.trace)
   end
 
   def test_parse_profile
     argv = ['--profile', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:Profile])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.profile)
   end
 
   def test_parse_exception_detail
     argv = ['--exception-detail', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:ExceptionDetail])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.exception_detail)
   end
 
   def test_parse_no_adaptive_compilation
     argv = ['--no-adaptive-compilation', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:NoAdaptiveCompilation])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.no_adaptive_compilation)
   end
 
   def test_parse_compilation_threshold
     argv = ['--compilation-threshold', '8192', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert_equal(8192, args.runtime_options[:CompilationThreshold])
+    spec = IRPack::Application.parse!(argv)
+    assert_equal(8192, spec.runtime_options.compilation_threshold)
   end
 
   def test_parse_pass_exceptions
     argv = ['--pass-exceptions', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:PassExceptions])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.pass_exceptions)
   end
 
   def test_parse_private_binding
     argv = ['--private-binding', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:PrivateBinding])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.private_binding)
   end
 
   def test_parse_show_clr_exceptions
     argv = ['--show-clr-exceptions', 'entry.rb']
-    args = IRPack::Application::Arguments.parse!(argv)
-    assert(args.runtime_options[:ShowClrExceptions])
+    spec = IRPack::Application.parse!(argv)
+    assert(spec.runtime_options.show_clr_exceptions)
   end
 end
 

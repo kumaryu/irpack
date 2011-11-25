@@ -30,16 +30,16 @@ class TC_Packager < Test::Unit::TestCase
   include Utils
 
   SrcFiles = {
-    File.join(File.dirname(__FILE__), 'test_packager.rb') => 'foo.rb',
-    File.join(File.dirname(__FILE__), 'test_cscompiler.rb') => 'bar.rb',
+    'foo.rb' => File.join(File.dirname(__FILE__), 'test_packager.rb'),
+    'bar.rb' => File.join(File.dirname(__FILE__), 'test_cscompiler.rb'),
   }
 
   def test_pack
     package_file = tempfilename
     IRPack::Packager.pack(SrcFiles, package_file)
     package = System::IO::Packaging::Package.open(package_file, System::IO::FileMode.open)
-    SrcFiles.each do |src, dest|
-      uri = System::Uri.new(File.join('/', dest), System::UriKind.relative)
+    SrcFiles.each do |dst, src|
+      uri = System::Uri.new(File.join('/', dst), System::UriKind.relative)
       assert(package.part_exists(uri))
       stream = package.get_part(uri).get_stream
       bytes = System::Array[System::Byte].new(stream.length)

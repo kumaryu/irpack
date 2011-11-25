@@ -33,7 +33,7 @@ module IRPack
     def pack(files, package_file, compress=false)
       compress_option = compress ? CompressionOption.normal : CompressionOption.not_compressed
       package = Package.open(package_file, System::IO::FileMode.create)
-      files.each do |src, dest|
+      files.each do |dest, src|
         uri = PackUriHelper.create_part_uri(Uri.new(dest, UriKind.relative))
         part = package.create_part(uri, 'application/octet-stream', compress_option)
         stream = part.get_stream
