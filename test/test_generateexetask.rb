@@ -132,5 +132,21 @@ class TC_GenerateExeTask < Test::Unit::TestCase
       'c:/foo/bar/baz.rb',
     ].collect {|fn| File.expand_path(fn) }.sort, task.prerequisites.sort)
   end
+
+  def test_execute
+    FileUtils.mkpath('test/tmp')
+    spec = IRPack::Specification.new {|s|
+      s.output_file = 'test/tmp/foo.exe'
+      s.entry_file  = 'test/fixtures/foo.rb'
+    }
+    IRPack::Rake::GenerateExeTask.new(spec) do
+    end
+    task = Rake::Task[spec.output_file]
+    task.execute
+    assert(File.exist?(spec.output_file))
+    assert('Hello World!', `#{spec.output_file}`)
+  ensure
+    FileUtils.rm_rf('test/tmp')
+  end
 end
 
