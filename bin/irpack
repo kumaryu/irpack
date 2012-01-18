@@ -25,6 +25,6 @@ freely, subject to the following restrictions:
 
 require 'irpack/application'
 
-args = IRPack::Application::Arguments.parse!(ARGV)
+args = IRPack::Application.parse!(ARGV)
 exit(IRPack::Application.run(args))
 
