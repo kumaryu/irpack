@@ -49,7 +49,7 @@ IronRuby dlls in their resource.
 When runtime, script can open EMBEDFILES with relative path from BASEDIR.
 
 for example:
-  $ irpack -o hoge/fuga.exe -d foo bar/entry.rb foo/hello.rb
+  $ irpack -o hoge/fuga.exe -b foo bar/entry.rb foo/hello.rb
 
 hoge/fuga.exe runs embedded bar/entry.rb.
 To load foo/hello.rb, require 'hello' (relative path from BASEDIR 'foo').
@@ -161,7 +161,7 @@ ENTRYFILEに続けてファイルを指定することによって他のファ�
 トリからの相対パス」に存在するように見えます。
 たとえば、
 
-  $ irpack -o hoge/fuga.exe -d foo bar/entry.rb foo/hello.rb
+  $ irpack -o hoge/fuga.exe -b foo bar/entry.rb foo/hello.rb
 
 としたときにfuga.exeの実行中(bar/entry.rb)からはfoo/hello.rbはhoge/hello.rb
 (fuga.exeのあるディレクトリhoge)にあるように見えます。
